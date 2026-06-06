@@ -59,133 +59,79 @@ BANNER = """
 [/bold yellow]"""
 
 CREDITS = "[bold cyan]Made by [bold white]Og-py3[/bold white] | Ultimate OSINT Intelligence Tool[/bold cyan]"
-VERSION = "[dim]v3.0 | Async Engine | 100+ Service Checks | Zero Latency Mode[/dim]"
+VERSION = "[dim]v4.0 | Async Engine | Accurate Platform Detection | Smart Body Validation[/dim]"
 
-# ────────────────── SERVICE DEFINITIONS ──────────────────────
+# ────────────────── PLATFORM CHECKS ──────────────────────────
+# Format: (name, url_template, not_found_body_patterns)
+# Rules:
+#   - HTTP 404 always means NOT found, regardless of platform
+#   - HTTP 200 + not_found_body_patterns empty  → FOUND
+#   - HTTP 200 + body contains any pattern      → NOT found
+#   - HackerNews special: body == "null"        → NOT found
+# Only platforms with RELIABLE, verifiable detection are listed.
+# Platforms that return 200 for any username (Instagram, Twitter, TikTok,
+# LinkedIn, etc.) are excluded — they produce false positives.
 
-EMAIL_SERVICES = [
-    # (service_name, check_url_template, method, expected_status_if_found, check_type)
-    ("Gravatar",     "https://www.gravatar.com/avatar/{md5}?d=404",       "GET", 200, "md5"),
-    ("GitHub",       "https://api.github.com/search/users?q={email}",     "GET", 200, "json_count"),
-    ("HaveIBeenPwned","https://haveibeenpwned.com/api/v3/breachedaccount/{email}", "GET", 200, "breach"),
-    ("Pastebin",     "https://pashboard.com/api/paste/email/{email}",     "GET", 200, "simple"),
-    ("Adobe",        "https://auth.services.adobe.com/en_US/createProfile.html", "GET", 200, "simple"),
-    ("Twitter/X",    "https://api.twitter.com/i/users/email_available.json?email={email}", "GET", 200, "json_available"),
-    ("Spotify",      "https://spclient.wg.spotify.com/signup/public/v1/account?validate=1&email={email}", "GET", 200, "json_status"),
-    ("Proton Mail",  "https://account.proton.me/api/users/available?Name={username}", "GET", 200, "simple"),
-    ("Mailchimp",    "https://login.mailchimp.com/", "GET", 200, "simple"),
-    ("Yahoo",        "https://login.yahoo.com/", "GET", 200, "simple"),
-    ("Outlook",      "https://login.live.com/", "GET", 200, "simple"),
-    ("Zoho",         "https://accounts.zoho.com/signin", "GET", 200, "simple"),
-    ("Tutanota",     "https://mail.tutanota.com/", "GET", 200, "simple"),
-    ("Fastmail",     "https://www.fastmail.com/login/", "GET", 200, "simple"),
-    ("iCloud",       "https://idmsa.apple.com/appleauth/auth", "GET", 200, "simple"),
-    ("Gmail",        "https://mail.google.com/", "GET", 200, "simple"),
-]
-
-USERNAME_SERVICES = [
-    ("GitHub",       "https://github.com/{username}",                       200),
-    ("GitLab",       "https://gitlab.com/{username}",                       200),
-    ("Twitter/X",    "https://twitter.com/{username}",                      200),
-    ("Instagram",    "https://www.instagram.com/{username}/",               200),
-    ("Reddit",       "https://www.reddit.com/user/{username}/about.json",   200),
-    ("Pinterest",    "https://www.pinterest.com/{username}/",               200),
-    ("Twitch",       "https://www.twitch.tv/{username}",                    200),
-    ("TikTok",       "https://www.tiktok.com/@{username}",                 200),
-    ("YouTube",      "https://www.youtube.com/@{username}",                 200),
-    ("LinkedIn",     "https://www.linkedin.com/in/{username}",              200),
-    ("Snapchat",     "https://www.snapchat.com/add/{username}",             200),
-    ("Tumblr",       "https://www.tumblr.com/{username}",                   200),
-    ("Medium",       "https://medium.com/@{username}",                      200),
-    ("Patreon",      "https://www.patreon.com/{username}",                  200),
-    ("Behance",      "https://www.behance.net/{username}",                  200),
-    ("DeviantArt",   "https://www.deviantart.com/{username}",               200),
-    ("Dribbble",     "https://dribbble.com/{username}",                     200),
-    ("Fiverr",       "https://www.fiverr.com/{username}",                   200),
-    ("Freelancer",   "https://www.freelancer.com/u/{username}",             200),
-    ("HackerNews",   "https://news.ycombinator.com/user?id={username}",     200),
-    ("ProductHunt",  "https://www.producthunt.com/@{username}",             200),
-    ("Steam",        "https://steamcommunity.com/id/{username}",            200),
-    ("Xbox",         "https://www.xboxgamertag.com/search/{username}",      200),
-    ("Twitch TV",    "https://api.twitch.tv/kraken/users?login={username}", 200),
-    ("SoundCloud",   "https://soundcloud.com/{username}",                   200),
-    ("Spotify",      "https://open.spotify.com/user/{username}",            200),
-    ("Bandcamp",     "https://{username}.bandcamp.com",                     200),
-    ("Mixcloud",     "https://www.mixcloud.com/{username}/",                200),
-    ("Vimeo",        "https://vimeo.com/{username}",                        200),
-    ("Dailymotion",  "https://www.dailymotion.com/{username}",              200),
-    ("Flickr",       "https://www.flickr.com/photos/{username}",            200),
-    ("500px",        "https://500px.com/p/{username}",                      200),
-    ("Unsplash",     "https://unsplash.com/@{username}",                    200),
-    ("SlideShare",   "https://www.slideshare.net/{username}",               200),
-    ("Academia",     "https://independent.academia.edu/{username}",         200),
-    ("About.me",     "https://about.me/{username}",                         200),
-    ("Keybase",      "https://keybase.io/{username}",                       200),
-    ("Gravatar",     "https://www.gravatar.com/{username}",                 200),
-    ("WordPress",    "https://en.wordpress.com/wp-login.php",               200),
-    ("Blogger",      "https://www.blogger.com/profile/{username}",          200),
-    ("Quora",        "https://www.quora.com/profile/{username}",            200),
-    ("StackOverflow","https://stackoverflow.com/users/{username}",          200),
-    ("CodePen",      "https://codepen.io/{username}",                       200),
-    ("Replit",       "https://replit.com/@{username}",                      200),
-    ("NPM",          "https://www.npmjs.com/~{username}",                   200),
-    ("PyPI",         "https://pypi.org/user/{username}/",                   200),
-    ("DockerHub",    "https://hub.docker.com/u/{username}",                 200),
-    ("HuggingFace",  "https://huggingface.co/{username}",                   200),
-    ("Kaggle",       "https://www.kaggle.com/{username}",                   200),
-    ("AngelList",    "https://angel.co/u/{username}",                       200),
-    ("Goodreads",    "https://www.goodreads.com/{username}",                200),
-    ("Last.fm",      "https://www.last.fm/user/{username}",                 200),
-    ("Trello",       "https://trello.com/{username}",                       200),
-    ("Slack",        "https://{username}.slack.com",                        200),
-    ("Notion",       "https://notion.so/@{username}",                       200),
-    ("Linktree",     "https://linktr.ee/{username}",                        200),
-    ("Wattpad",      "https://www.wattpad.com/user/{username}",             200),
-    ("AO3",          "https://archiveofourown.org/users/{username}",        200),
-    ("Mastodon",     "https://mastodon.social/@{username}",                 200),
-    ("Discord",      "https://discord.com/users/{username}",                200),
-    ("Telegram",     "https://t.me/{username}",                             200),
-    ("Signal",       "https://signal.me/#p/{username}",                     200),
-    ("Clubhouse",    "https://www.clubhouse.com/@{username}",               200),
-    ("Substack",     "https://{username}.substack.com",                     200),
-    ("Hashnode",     "https://hashnode.com/@{username}",                    200),
-    ("Dev.to",       "https://dev.to/{username}",                           200),
-    ("Lobsters",     "https://lobste.rs/u/{username}",                      200),
-    ("GitBook",      "https://app.gitbook.com/@{username}",                 200),
-    ("itch.io",      "https://{username}.itch.io",                          200),
-    ("Roblox",       "https://www.roblox.com/user.aspx?username={username}",200),
-    ("Fortnite",     "https://fortnitetracker.com/profile/all/{username}",  200),
-    ("Minecraft",    "https://namemc.com/profile/{username}",               200),
-    ("Chess.com",    "https://www.chess.com/member/{username}",             200),
-    ("Duolingo",     "https://www.duolingo.com/profile/{username}",         200),
-    ("Lichess",      "https://lichess.org/@/{username}",                    200),
-    ("MyAnimeList",  "https://myanimelist.net/profile/{username}",          200),
-    ("AniList",      "https://anilist.co/user/{username}/",                 200),
-    ("Letterboxd",   "https://letterboxd.com/{username}",                   200),
-    ("Goodreads2",   "https://www.goodreads.com/user/show/{username}",      200),
-    ("Tinder",       "https://tinder.com/@{username}",                      200),
-    ("OKCupid",      "https://www.okcupid.com/profile/{username}",          200),
-    ("Badoo",        "https://badoo.com/en/{username}",                     200),
-    ("CashApp",      "https://cash.app/${username}",                        200),
-    ("Venmo",        "https://venmo.com/{username}",                        200),
-    ("PayPal",       "https://paypal.me/{username}",                        200),
-    ("Coinbase",     "https://www.coinbase.com/{username}",                 200),
-    ("Etsy",         "https://www.etsy.com/shop/{username}",                200),
-    ("eBay",         "https://www.ebay.com/usr/{username}",                 200),
-    ("Amazon",       "https://www.amazon.com/gp/profile/amzn1.account.{username}", 200),
-    ("Poshmark",     "https://poshmark.com/closet/{username}",              200),
-    ("Depop",        "https://www.depop.com/{username}",                    200),
-    ("VSCO",         "https://vsco.co/{username}/gallery",                  200),
-    ("WeHeartIt",    "https://weheartit.com/{username}",                    200),
-    ("Ask.fm",       "https://ask.fm/{username}",                           200),
-    ("Imgur",        "https://imgur.com/user/{username}",                   200),
-    ("Giphy",        "https://giphy.com/{username}",                        200),
-    ("Streamlabs",   "https://streamlabs.com/{username}",                   200),
-    ("Throne",       "https://throne.com/{username}",                       200),
-    ("Kick",         "https://kick.com/{username}",                         200),
-    ("Rumble",       "https://rumble.com/user/{username}",                  200),
-    ("Odysee",       "https://odysee.com/@{username}",                      200),
-    ("BitChute",     "https://www.bitchute.com/profile/{username}",         200),
+PLATFORM_CHECKS = [
+    # ── Dev / Code (reliable 404 on miss) ─────────────────────────────────────
+    ("GitHub",       "https://github.com/{u}",                                       []),
+    ("GitLab",       "https://gitlab.com/{u}",                                       []),
+    ("Replit",       "https://replit.com/@{u}",                                      []),
+    ("CodePen",      "https://codepen.io/{u}",                                       []),
+    ("NPM",          "https://www.npmjs.com/~{u}",                                   []),
+    ("PyPI",         "https://pypi.org/user/{u}/",                                   []),
+    ("DockerHub",    "https://hub.docker.com/u/{u}",                                 []),
+    ("HuggingFace",  "https://huggingface.co/{u}",                                   []),
+    ("Kaggle",       "https://www.kaggle.com/{u}",                                   []),
+    ("Hashnode",     "https://hashnode.com/@{u}",                                    []),
+    ("Lobsters",     "https://lobste.rs/u/{u}",                                      []),
+    # ── Dev APIs (JSON, 404 on miss) ──────────────────────────────────────────
+    ("Dev.to",       "https://dev.to/api/users/by_username?url={u}",                 []),
+    ("Chess.com",    "https://api.chess.com/pub/player/{u}",                         []),
+    ("Lichess",      "https://lichess.org/api/user/{u}",                             []),
+    ("Mastodon",     "https://mastodon.social/api/v1/accounts/lookup?acct={u}",      []),
+    # ── Social / Community ─────────────────────────────────────────────────────
+    ("Reddit",       "https://www.reddit.com/user/{u}/about.json",                   []),
+    ("Keybase",      "https://keybase.io/{u}",                                       []),
+    ("About.me",     "https://about.me/{u}",                                         []),
+    ("Quora",        "https://www.quora.com/profile/{u}",                            []),
+    ("Medium",       "https://medium.com/@{u}",                                      ["pageerror", "page not found"]),
+    ("Linktree",     "https://linktr.ee/{u}",                                        ["sorry, this page isn't available", "this account doesn't exist", "404"]),
+    ("Substack",     "https://{u}.substack.com",                                     ["this publication doesn't exist", "start writing on substack"]),
+    ("Tumblr",       "https://{u}.tumblr.com",                                       ["there's nothing here.", "page not found"]),
+    # ── HackerNews: Firebase API returns literal "null" if user missing ────────
+    ("HackerNews",   "https://hacker-news.firebaseio.com/v0/user/{u}.json",          ["__hn_check__"]),
+    # ── Gaming ─────────────────────────────────────────────────────────────────
+    ("Steam",        "https://steamcommunity.com/id/{u}",                            ["the specified profile could not be found"]),
+    ("Minecraft",    "https://namemc.com/profile/{u}",                               []),
+    ("Roblox",       "https://www.roblox.com/user.aspx?username={u}",               ["page cannot be found", "page not found"]),
+    ("Fortnite",     "https://fortnitetracker.com/profile/all/{u}",                  ["we couldn't find this player", "player not found"]),
+    ("Duolingo",     "https://www.duolingo.com/profile/{u}",                         []),
+    ("Kick",         "https://kick.com/{u}",                                         []),
+    ("Chess.com Web","https://www.chess.com/member/{u}",                             []),
+    # ── Creative ───────────────────────────────────────────────────────────────
+    ("Dribbble",     "https://dribbble.com/{u}",                                     []),
+    ("Behance",      "https://www.behance.net/{u}",                                  []),
+    ("DeviantArt",   "https://www.deviantart.com/{u}",                               []),
+    ("VSCO",         "https://vsco.co/{u}/gallery",                                  []),
+    ("itch.io",      "https://{u}.itch.io",                                          []),
+    ("Bandcamp",     "https://{u}.bandcamp.com",                                     []),
+    ("Patreon",      "https://www.patreon.com/{u}",                                  []),
+    # ── Music / Video ──────────────────────────────────────────────────────────
+    ("SoundCloud",   "https://soundcloud.com/{u}",                                   []),
+    ("Vimeo",        "https://vimeo.com/{u}",                                        []),
+    ("Last.fm",      "https://www.last.fm/user/{u}",                                 []),
+    ("Mixcloud",     "https://www.mixcloud.com/{u}/",                                ["page not found", "no results found"]),
+    ("Flickr",       "https://www.flickr.com/people/{u}",                            []),
+    # ── Anime / Books / Writing ────────────────────────────────────────────────
+    ("MyAnimeList",  "https://myanimelist.net/profile/{u}",                          []),
+    ("AniList",      "https://anilist.co/user/{u}/",                                 []),
+    ("Letterboxd",   "https://letterboxd.com/{u}",                                   []),
+    ("AO3",          "https://archiveofourown.org/users/{u}",                        []),
+    ("Wattpad",      "https://www.wattpad.com/user/{u}",                             []),
+    # ── Other ──────────────────────────────────────────────────────────────────
+    ("Imgur",        "https://imgur.com/user/{u}",                                   []),
+    ("Gravatar",     "https://en.gravatar.com/{u}",                                  ["gravatar profile not found", "no profile found"]),
 ]
 
 PHONE_CARRIERS = {
@@ -240,17 +186,44 @@ async def measure_latency(host: str, port: int = 443, attempts: int = 3) -> dict
         }
     return {"min": None, "max": None, "avg": None, "jitter": None}
 
-async def check_username_service(session, name: str, url_template: str, expected_status: int, timeout: int = 8):
-    username = name
-    url = url_template.format(username=username)
+async def check_email_reputation(email: str, session: aiohttp.ClientSession) -> dict:
+    """EmailRep.io — free, no API key. Returns reputation, breach flags, known profiles."""
     try:
-        async with session.get(url, timeout=aiohttp.ClientTimeout(total=timeout), allow_redirects=True) as resp:
-            found = resp.status == expected_status
-            if found and "not found" in (await resp.text()).lower()[:500]:
-                found = False
-            return found
+        async with session.get(
+            f"https://emailrep.io/{email}",
+            headers={"User-Agent": "osint-tool-og-py3", "Accept": "application/json"},
+            timeout=aiohttp.ClientTimeout(total=8)
+        ) as resp:
+            if resp.status == 200:
+                return await resp.json()
     except:
-        return None
+        pass
+    return {}
+
+async def check_spotify_email(email: str, session: aiohttp.ClientSession) -> dict:
+    """Spotify signup endpoint: status 20 = email already registered, 1 = free."""
+    try:
+        async with session.get(
+            f"https://spclient.wg.spotify.com/signup/public/v1/account?validate=1&email={email}",
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=aiohttp.ClientTimeout(total=6)
+        ) as resp:
+            if resp.status == 200:
+                d = await resp.json()
+                return {"registered": d.get("status") == 20, "raw_status": d.get("status")}
+    except:
+        pass
+    return {"registered": None}
+
+async def check_mx_deliverable(domain: str) -> dict:
+    """Check if domain has valid MX records — confirms email domain is real."""
+    try:
+        loop = asyncio.get_event_loop()
+        answers = await loop.run_in_executor(executor, lambda: dns.resolver.resolve(domain, "MX", lifetime=4))
+        mx = sorted([(r.preference, str(r.exchange).rstrip(".")) for r in answers])
+        return {"valid": True, "mx_records": mx, "primary_mx": mx[0][1] if mx else None}
+    except:
+        return {"valid": False, "mx_records": [], "primary_mx": None}
 
 async def get_ip_info(ip: str) -> dict:
     urls = [
@@ -296,22 +269,9 @@ async def get_domain_info(domain: str) -> dict:
 
     return results
 
-async def check_email_breach(email: str, session: aiohttp.ClientSession) -> list:
-    breaches = []
-    try:
-        headers = {"hibp-api-key": "free", "User-Agent": "OSINT-Tool-Og-py3"}
-        async with session.get(
-            f"https://haveibeenpwned.com/api/v3/breachedaccount/{email}",
-            headers=headers, timeout=aiohttp.ClientTimeout(total=8)
-        ) as resp:
-            if resp.status == 200:
-                data = await resp.json()
-                breaches = [b.get("Name", "Unknown") for b in data]
-            elif resp.status == 404:
-                breaches = []
-    except:
-        pass
-    return breaches
+async def check_email_breach(email: str, session: aiohttp.ClientSession) -> dict:
+    """Wrapper that calls check_email_reputation — no API key needed."""
+    return await check_email_reputation(email, session)
 
 async def get_gravatar_info(email: str, session: aiohttp.ClientSession) -> dict:
     hash_val = md5_hash(email)
@@ -356,32 +316,61 @@ async def get_github_info(username: str, session: aiohttp.ClientSession) -> dict
     return {"found": False}
 
 async def run_username_checks(username: str) -> list:
+    """
+    Smart per-platform checker using PLATFORM_CHECKS.
+    Rules:
+      - HTTP 404           → NOT found (all platforms)
+      - HTTP 200, no patterns → FOUND
+      - HTTP 200, body contains any not_found_pattern → NOT found
+      - HackerNews: body.strip() == 'null' → NOT found
+    No API keys required.
+    """
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         "Accept-Language": "en-US,en;q=0.9",
+        "Accept": "text/html,application/json,*/*;q=0.8",
     }
-    connector = aiohttp.TCPConnector(limit=80, ssl=False)
-    results = []
+    connector = aiohttp.TCPConnector(limit=60, ssl=False, ttl_dns_cache=300)
+    semaphore = asyncio.Semaphore(40)
+
+    async def check_one(name, url_tpl, not_found_patterns):
+        async with semaphore:
+            url = url_tpl.format(u=username)
+            try:
+                async with session.get(
+                    url,
+                    timeout=aiohttp.ClientTimeout(total=10, connect=4),
+                    allow_redirects=True
+                ) as resp:
+                    # Hard 404 = definitely gone
+                    if resp.status == 404:
+                        return {"service": name, "url": url, "found": False, "status": 404}
+                    # Non-200 range we don't trust as "found"
+                    if resp.status not in (200, 301, 302):
+                        return {"service": name, "url": url, "found": None, "status": resp.status}
+
+                    # Read body only when we need pattern matching
+                    found = True
+                    if not_found_patterns:
+                        body = (await resp.text(errors="ignore"))[:5000].lower()
+                        # HackerNews Firebase: entire body is the JSON value "null"
+                        if name == "HackerNews" and body.strip() == "null":
+                            found = False
+                        else:
+                            for pat in not_found_patterns:
+                                if pat in body:
+                                    found = False
+                                    break
+
+                    return {"service": name, "url": url, "found": found, "status": resp.status}
+            except asyncio.TimeoutError:
+                return {"service": name, "url": url, "found": None, "status": "timeout"}
+            except Exception:
+                return {"service": name, "url": url, "found": None, "status": "error"}
+
     async with aiohttp.ClientSession(headers=headers, connector=connector) as session:
-        tasks = []
-        for service_name, url_template, expected_status in USERNAME_SERVICES:
-            url = url_template.format(username=username)
-            tasks.append((service_name, url, expected_status))
-
-        semaphore = asyncio.Semaphore(50)
-
-        async def bounded_check(service_name, url, expected_status):
-            async with semaphore:
-                try:
-                    async with session.get(url, timeout=aiohttp.ClientTimeout(total=8), allow_redirects=True) as resp:
-                        found = resp.status == expected_status
-                        return {"service": service_name, "url": url, "found": found, "status": resp.status}
-                except Exception as e:
-                    return {"service": service_name, "url": url, "found": None, "status": "timeout"}
-
-        coros = [bounded_check(s, u, e) for s, u, e in tasks]
-        results = await asyncio.gather(*coros, return_exceptions=False)
-    return results
+        coros = [check_one(n, u, p) for n, u, p in PLATFORM_CHECKS]
+        return await asyncio.gather(*coros)
 
 # ────────────────── PHONE OSINT ──────────────────────────────
 
@@ -486,27 +475,8 @@ async def run_ip_osint(ip: str) -> dict:
     async with aiohttp.ClientSession() as session:
         geo = await get_ip_info(ip)
         results["geo"] = geo
-
-        try:
-            async with session.get(f"https://api.abuseipdb.com/api/v2/check?ipAddress={ip}",
-                                   headers={"Key": "free", "Accept": "application/json"},
-                                   timeout=aiohttp.ClientTimeout(total=6)) as resp:
-                if resp.status == 200:
-                    results["abuse"] = await resp.json()
-        except:
-            pass
-
-        try:
-            async with session.get(f"https://api.shodan.io/shodan/host/{ip}?key=free",
-                                   timeout=aiohttp.ClientTimeout(total=6)) as resp:
-                if resp.status == 200:
-                    results["shodan"] = await resp.json()
-        except:
-            pass
-
         latency = await measure_latency(ip, 80, 3)
         results["latency"] = latency
-
     return results
 
 async def resolve_host_to_ip(host: str) -> list:
@@ -545,55 +515,88 @@ async def run_email_osint(email: str):
             console=console,
             transient=True,
         ) as progress:
-            main_task = progress.add_task("Running parallel OSINT checks...", total=6)
+            main_task = progress.add_task("Running parallel OSINT checks...", total=7)
 
-            # Run all checks in parallel
-            breach_task = asyncio.create_task(check_email_breach(email, session))
-            gravatar_task = asyncio.create_task(get_gravatar_info(email, session))
-            github_task = asyncio.create_task(get_github_info(username, session))
-            domain_task = asyncio.create_task(get_domain_info(domain))
+            emailrep_task   = asyncio.create_task(check_email_reputation(email, session))
+            spotify_task    = asyncio.create_task(check_spotify_email(email, session))
+            gravatar_task   = asyncio.create_task(get_gravatar_info(email, session))
+            github_task     = asyncio.create_task(get_github_info(username, session))
+            domain_task     = asyncio.create_task(get_domain_info(domain))
             ip_resolve_task = asyncio.create_task(resolve_host_to_ip(domain))
-            username_task = asyncio.create_task(run_username_checks(username))
+            username_task   = asyncio.create_task(run_username_checks(username))
 
-            progress.advance(main_task)
+            emailrep, spotify, gravatar, github, domain_info, domain_ips, username_results = await asyncio.gather(
+                emailrep_task, spotify_task, gravatar_task, github_task,
+                domain_task, ip_resolve_task, username_task
+            )
+            progress.update(main_task, completed=7)
 
-            breaches = await breach_task
-            progress.advance(main_task)
-            gravatar = await gravatar_task
-            progress.advance(main_task)
-            github = await github_task
-            progress.advance(main_task)
-            domain_info = await domain_task
-            progress.advance(main_task)
-            domain_ips = await ip_resolve_task
-            username_results = await username_task
-            progress.advance(main_task)
+    # ── Extract EmailRep fields ──
+    er_details   = emailrep.get("details", {})
+    er_leaked    = er_details.get("credentials_leaked", False)
+    er_breached  = er_details.get("data_breach", False)
+    er_susp      = emailrep.get("suspicious", False)
+    er_rep       = emailrep.get("reputation", "unknown")
+    er_disp      = er_details.get("disposable", False)
+    er_deliv     = er_details.get("deliverable", None)
+    er_free      = er_details.get("free_provider", None)
+    er_spam      = er_details.get("spam", False)
+    er_profiles  = er_details.get("profiles", [])
+    er_first     = er_details.get("first_seen", "")
+    er_last      = er_details.get("last_seen", "")
 
     # ── Summary Panel ──
     summary_table = Table(box=box.ROUNDED, show_header=False, border_style="cyan", padding=(0, 1))
     summary_table.add_column("Field", style="bold cyan", no_wrap=True)
     summary_table.add_column("Value", style="white")
 
-    summary_table.add_row("📧 Email", email)
-    summary_table.add_row("👤 Username", username)
-    summary_table.add_row("🌐 Domain", domain)
-    summary_table.add_row("🔓 Breaches", f"[bold red]{len(breaches)} found[/bold red]" if breaches else "[bold green]0 found — Clean[/bold green]")
-    summary_table.add_row("🖼 Gravatar", "[bold green]YES[/bold green]" if gravatar.get("found") else "[dim]Not found[/dim]")
-    summary_table.add_row("🐙 GitHub", f"[bold green]Found: {github.get('name') or username}[/bold green]" if github.get("found") else "[dim]Not found[/dim]")
-    summary_table.add_row("🌍 Domain IPs", ", ".join(domain_ips) if domain_ips else "[dim]None resolved[/dim]")
-
-    console.print(Panel(summary_table, title="[bold white]EMAIL SUMMARY[/bold white]", border_style="cyan"))
-
-    # ── Breach Details ──
-    if breaches:
-        breach_table = Table(title="[bold red]⚠ DATA BREACHES FOUND[/bold red]", box=box.ROUNDED, border_style="red")
-        breach_table.add_column("#", style="bold red", width=4)
-        breach_table.add_column("Service / Breach", style="bold white")
-        for i, b in enumerate(breaches, 1):
-            breach_table.add_row(str(i), b)
-        console.print(breach_table)
+    if er_leaked or er_breached:
+        breach_summary = "[bold red]⚠ Credentials / Breach Detected[/bold red]"
+    elif emailrep:
+        breach_summary = "[bold green]✓ No Known Breaches[/bold green]"
     else:
-        console.print(Panel("[bold green]✓ No known data breaches found for this email.[/bold green]", border_style="green"))
+        breach_summary = "[dim]Check unavailable (rate limited)[/dim]"
+
+    summary_table.add_row("📧 Email",       email)
+    summary_table.add_row("👤 Username",    username)
+    summary_table.add_row("🌐 Domain",      domain)
+    summary_table.add_row("🛡 Reputation",  er_rep.title() if er_rep else "[dim]Unknown[/dim]")
+    summary_table.add_row("🔓 Breach",      breach_summary)
+    summary_table.add_row("🎵 Spotify",     "[bold green]Registered[/bold green]" if spotify.get("registered") else ("[dim]Not registered[/dim]" if spotify.get("registered") is False else "[dim]Check failed[/dim]"))
+    summary_table.add_row("🖼 Gravatar",    "[bold green]YES[/bold green]" if gravatar.get("found") else "[dim]Not found[/dim]")
+    summary_table.add_row("🐙 GitHub",      f"[bold green]Found: {github.get('name') or username}[/bold green]" if github.get("found") else "[dim]Not found[/dim]")
+    summary_table.add_row("🌍 Domain IPs",  ", ".join(domain_ips) if domain_ips else "[dim]None resolved[/dim]")
+
+    console.print(Panel(summary_table, title="[bold white]📊 EMAIL SUMMARY[/bold white]", border_style="cyan"))
+
+    # ── EmailRep Reputation Panel ──
+    if emailrep:
+        rep_table = Table(box=box.ROUNDED, show_header=False, border_style="red" if (er_leaked or er_breached or er_susp) else "green", padding=(0, 1))
+        rep_table.add_column("Field", style="bold white", no_wrap=True)
+        rep_table.add_column("Value", style="white")
+
+        def yn(val, warn=True):
+            if val is True:
+                return "[bold red]YES[/bold red]" if warn else "[bold green]YES[/bold green]"
+            if val is False:
+                return "[bold green]No[/bold green]" if warn else "[dim]No[/dim]"
+            return "[dim]Unknown[/dim]"
+
+        rep_table.add_row("Reputation",          f"[bold {'red' if er_rep in ('none','low') else 'green'}]{er_rep.title()}[/bold {'red' if er_rep in ('none','low') else 'green'}]" if er_rep else "[dim]Unknown[/dim]")
+        rep_table.add_row("Suspicious",          yn(er_susp))
+        rep_table.add_row("Credentials Leaked",  yn(er_leaked))
+        rep_table.add_row("Data Breach",         yn(er_breached))
+        rep_table.add_row("Disposable Address",  yn(er_disp))
+        rep_table.add_row("Deliverable",         yn(er_deliv, warn=False))
+        rep_table.add_row("Free Provider",       yn(er_free,  warn=False))
+        rep_table.add_row("Spam",                yn(er_spam))
+        if er_first: rep_table.add_row("First Seen", er_first)
+        if er_last:  rep_table.add_row("Last Seen",  er_last)
+        if er_profiles:
+            rep_table.add_row("Known Profiles",  ", ".join(er_profiles))
+
+        title_color = "red" if (er_leaked or er_breached or er_susp) else "green"
+        console.print(Panel(rep_table, title=f"[bold {title_color}]🛡 EMAIL REPUTATION (EmailRep.io)[/bold {title_color}]", border_style=title_color))
 
     # ── Gravatar ──
     if gravatar.get("found"):
@@ -1089,41 +1092,70 @@ async def run_all_in_one(target: str):
             phase(1, "Core Email Intelligence", "cyan")
             with Progress(SpinnerColumn(style="cyan"), TextColumn("[cyan]{task.description}"), console=console, transient=True) as prog:
                 t = prog.add_task("Running all parallel checks...", total=None)
-                breach_task    = asyncio.create_task(check_email_breach(email, session))
+                emailrep_task  = asyncio.create_task(check_email_reputation(email, session))
+                spotify_task   = asyncio.create_task(check_spotify_email(email, session))
                 gravatar_task  = asyncio.create_task(get_gravatar_info(email, session))
                 github_task    = asyncio.create_task(get_github_info(username, session))
                 domain_task    = asyncio.create_task(get_domain_info(domain))
                 ip_resolve_task= asyncio.create_task(resolve_host_to_ip(domain))
                 username_task  = asyncio.create_task(run_username_checks(username))
 
-                breaches, gravatar, github, domain_info, domain_ips, username_results = await asyncio.gather(
-                    breach_task, gravatar_task, github_task, domain_task, ip_resolve_task, username_task
+                emailrep, spotify, gravatar, github, domain_info, domain_ips, username_results = await asyncio.gather(
+                    emailrep_task, spotify_task, gravatar_task, github_task,
+                    domain_task, ip_resolve_task, username_task
                 )
                 prog.remove_task(t)
+
+            # ── Extract EmailRep fields ──
+            aio_details  = emailrep.get("details", {})
+            aio_leaked   = aio_details.get("credentials_leaked", False)
+            aio_breached = aio_details.get("data_breach", False)
+            aio_susp     = emailrep.get("suspicious", False)
+            aio_rep      = emailrep.get("reputation", "unknown")
+            aio_profiles = aio_details.get("profiles", [])
+
+            if aio_leaked or aio_breached:
+                breach_label = "[bold red]⚠ Credentials / Breach Detected[/bold red]"
+            elif emailrep:
+                breach_label = "[bold green]✓ No Known Breaches[/bold green]"
+            else:
+                breach_label = "[dim]Check unavailable[/dim]"
 
             # ── Summary ──
             found_svcs = [r for r in username_results if r.get("found") is True]
             s_table = Table(box=box.ROUNDED, show_header=False, border_style="cyan", padding=(0, 1))
             s_table.add_column("Field", style="bold cyan", no_wrap=True)
             s_table.add_column("Value", style="white")
-            s_table.add_row("📧 Email", email)
-            s_table.add_row("👤 Username", username)
-            s_table.add_row("🌐 Domain", domain)
-            s_table.add_row("🔓 Breaches", f"[bold red]{len(breaches)} found[/bold red]" if breaches else "[bold green]Clean[/bold green]")
-            s_table.add_row("🖼 Gravatar", "[green]YES[/green]" if gravatar.get("found") else "[dim]No[/dim]")
-            s_table.add_row("🐙 GitHub", f"[green]{github.get('name') or username}[/green]" if github.get("found") else "[dim]No[/dim]")
-            s_table.add_row("📡 Profiles Found", f"[bold green]{len(found_svcs)}[/bold green] / {len(username_results)} platforms")
-            s_table.add_row("🌍 Domain IPs", ", ".join(domain_ips) if domain_ips else "[dim]None[/dim]")
+            s_table.add_row("📧 Email",        email)
+            s_table.add_row("👤 Username",     username)
+            s_table.add_row("🌐 Domain",       domain)
+            s_table.add_row("🛡 Reputation",   aio_rep.title() if aio_rep else "[dim]Unknown[/dim]")
+            s_table.add_row("🔓 Breach",       breach_label)
+            s_table.add_row("🎵 Spotify",      "[bold green]Registered[/bold green]" if spotify.get("registered") else ("[dim]Not registered[/dim]" if spotify.get("registered") is False else "[dim]Check failed[/dim]"))
+            s_table.add_row("🖼 Gravatar",     "[green]YES[/green]" if gravatar.get("found") else "[dim]No[/dim]")
+            s_table.add_row("🐙 GitHub",       f"[green]{github.get('name') or username}[/green]" if github.get("found") else "[dim]No[/dim]")
+            s_table.add_row("📡 Profiles",     f"[bold green]{len(found_svcs)}[/bold green] / {len(username_results)} platforms")
+            s_table.add_row("🌍 Domain IPs",   ", ".join(domain_ips) if domain_ips else "[dim]None[/dim]")
             console.print(Panel(s_table, title="[bold white]📊 CORE SUMMARY[/bold white]", border_style="cyan"))
 
-            # Breaches
-            if breaches:
-                bt = Table(title="[bold red]⚠ BREACHES[/bold red]", box=box.ROUNDED, border_style="red")
-                bt.add_column("#", width=4, style="bold red")
-                bt.add_column("Service", style="white")
-                for i, b in enumerate(breaches, 1):
-                    bt.add_row(str(i), b)
-                console.print(bt)
+            # EmailRep detail panel
+            if emailrep:
+                def _yn(val, warn=True):
+                    if val is True:  return "[bold red]YES[/bold red]" if warn else "[bold green]YES[/bold green]"
+                    if val is False: return "[bold green]No[/bold green]" if warn else "[dim]No[/dim]"
+                    return "[dim]Unknown[/dim]"
+                rt = Table(box=box.ROUNDED, show_header=False, border_style="red" if (aio_leaked or aio_breached) else "green", padding=(0, 1))
+                rt.add_column("Field", style="bold white", no_wrap=True)
+                rt.add_column("Value", style="white")
+                rt.add_row("Credentials Leaked", _yn(aio_leaked))
+                rt.add_row("Data Breach",        _yn(aio_breached))
+                rt.add_row("Suspicious",         _yn(aio_susp))
+                rt.add_row("Disposable",         _yn(aio_details.get("disposable", False)))
+                rt.add_row("Deliverable",        _yn(aio_details.get("deliverable"), warn=False))
+                rt.add_row("Spam",               _yn(aio_details.get("spam", False)))
+                if aio_profiles: rt.add_row("Known Profiles", ", ".join(aio_profiles))
+                color = "red" if (aio_leaked or aio_breached or aio_susp) else "green"
+                console.print(Panel(rt, title=f"[bold {color}]🛡 EMAIL REPUTATION[/bold {color}]", border_style=color))
 
             # Gravatar
             if gravatar.get("found"):
@@ -1229,7 +1261,7 @@ async def run_all_in_one(target: str):
                             ip_t.add_row(field, str(value))
                     console.print(Panel(ip_t, title=f"[bold green]🌍 IP: {ip}[/bold green]", border_style="green"))
 
-        master_report["results"]["breaches"] = breaches
+        master_report["results"]["emailrep"] = emailrep
         master_report["results"]["gravatar"] = gravatar
         master_report["results"]["github"] = github
         master_report["results"]["platforms_found"] = [r["service"] for r in found_svcs]
