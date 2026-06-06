@@ -1,72 +1,84 @@
-# OSINT Tool — Made by Og-py3
+# 🕵️ OSINT Tool — by Og-py3
 
-> **Ultimate open-source intelligence tool** — async, concurrent, and faster than most Go implementations.
+![Build & Release](https://github.com/og-py3/osint-tool/actions/workflows/build-release.yml/badge.svg)
+![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python&logoColor=white)
+![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-informational)
+![License](https://img.shields.io/badge/License-MIT-green)
+![Async](https://img.shields.io/badge/Engine-Async%20%2B%20Concurrent-orange)
+![No API Keys](https://img.shields.io/badge/API%20Keys-None%20Required-brightgreen)
+![Platforms](https://img.shields.io/badge/Platforms%20Checked-30%2B-purple)
 
-```
- ██████╗ ███████╗██╗███╗   ██╗████████╗
-██╔═══██╗██╔════╝██║████╗  ██║╚══██╔══╝
-██║   ██║███████╗██║██╔██╗ ██║   ██║   
-██║   ██║╚════██║██║██║╚██╗██║   ██║   
-╚██████╔╝███████║██║██║ ╚████║   ██║   
- ╚═════╝ ╚══════╝╚═╝╚═╝  ╚═══╝   ╚═╝  
-```
-
-## Features
-
-| Module | Capabilities |
-|---|---|
-| 📧 **Email OSINT** | HaveIBeenPwned breach check, Gravatar profile, GitHub lookup, WHOIS, DNS (A/MX/NS/TXT/AAAA/CNAME), IP geolocation + ASN, 100+ platform scan |
-| 📱 **Phone OSINT** | E.164/international format, carrier detection, line type (mobile/VoIP/landline/toll-free), country + timezone + local time, multi-host latency testing |
-| 🌍 **IP OSINT** | Full geolocation, ISP, ASN, continent/city/ZIP, proxy/VPN detection, hosting flag, live ping latency |
-| 🌐 **Domain OSINT** | WHOIS registration details, full DNS records, IP resolution → auto IP geolocation |
-| 🔎 **Username** | 100+ platforms: GitHub, Instagram, TikTok, LinkedIn, Twitch, Reddit, Steam, Spotify, Discord, Telegram, PayPal, Roblox, Chess.com, and many more |
-| 🚀 **All-in-One** | Auto-detects input type (email/phone/IP/domain/username) and runs every relevant check — including **Email → Phone extraction** |
-
-## Email → Phone Hunt
-
-When given an email, the All-in-One scanner attempts to extract linked phone numbers from:
-- WHOIS registration records
-- GitHub profile + linked personal website
-- Domain pages (`/`, `/contact`, `/about`, `/team`)
-- LinkedIn, Twitter, About.me, Keybase profiles
-
-Valid numbers are parsed with `phonenumbers` (carrier + location + E.164) and automatically trigger a full Phone OSINT deep-dive.
-
-## Speed
-
-- Fully async with `aiohttp` — 50–80 concurrent HTTP requests
-- `ThreadPoolExecutor` for blocking calls (DNS, WHOIS, socket)
-- Semaphore-gated concurrency for zero rate-limit crashes
-- 100 platform scan completes in ~5–8 seconds depending on network
-
-## Install
-
-```bash
-pip install aiohttp phonenumbers rich dnspython python-whois
-```
-
-## Run
-
-```bash
-python3 osint_tool.py
-```
-
-## Menu
-
-```
-[1] Email OSINT
-[2] Phone OSINT
-[3] IP OSINT
-[4] Domain OSINT
-[5] Username check (100+ platforms)
-[6] ALL-IN-ONE — auto-detect & run everything + Email→Phone hunt
-[7] Exit
-```
-
-## Disclaimer
-
-This tool is intended for **legal, ethical OSINT** purposes only — security research, penetration testing with permission, or finding your own exposed data. Never use it against individuals without consent. The author is not responsible for misuse.
+> **Fast, accurate, async OSINT intelligence tool — zero API keys required.**  
+> Built by [Og-py3](https://github.com/og-py3) for open-source intelligence gathering.
 
 ---
 
-**Made by Og-py3** | Python 3.9+ | Async Engine | Zero dependencies on paid APIs
+## ⬇️ Download
+
+👉 **[Latest Windows .exe Release](https://github.com/og-py3/osint-tool/releases/latest)**
+
+No Python install needed. Just download and run.
+
+---
+
+## 🚀 Features
+
+| Module | What it does |
+|--------|-------------|
+| 📧 **Email OSINT** | Reputation check (EmailRep.io), Gravatar lookup, GitHub profile, MX/DNS validation, Spotify registration check, WHOIS, domain IP geo |
+| 📱 **Phone OSINT** | Carrier detection, country/region, line type (mobile/VoIP/landline), timezone, local time display — all via phonenumbers library (no API key) |
+| 🌍 **IP OSINT** | Full geolocation, ISP, ASN, proxy/VPN/hosting detection, latency test — via ip-api.com (free) |
+| 🌐 **Domain OSINT** | WHOIS, full DNS (A/AAAA/MX/NS/TXT/CNAME), IP resolution, auto geolocation, phone scraping from domain pages |
+| 🔎 **Username OSINT** | 30+ verified platforms: GitHub, Reddit, GitLab, HackerNews, Chess.com, Lichess, Dev.to, Mastodon, NPM, Keybase, PyPI, HuggingFace, Last.fm, Vimeo, Medium, Steam, Tumblr, Substack + more |
+| 🚀 **All-in-One** | Auto-detects input type, runs all relevant checks, Email→Phone hunting |
+
+---
+
+## 🎯 Accuracy — How Platform Detection Works
+
+| Tier | Method | Examples |
+|------|--------|---------|
+| **Tier 1** | JSON API — real HTTP 404 on miss | GitHub API, Reddit, HackerNews (null body), Chess.com, Lichess, Dev.to, Mastodon, NPM, Keybase |
+| **Tier 2** | HTML — server returns real 404 | GitLab, PyPI, HuggingFace, CodePen, Last.fm, Vimeo, Medium, Letterboxd, MyAnimeList, AO3, Wattpad |
+| **Tier 3** | Body pattern detection | Steam ("profile not found"), Tumblr, Substack, Gravatar |
+
+> **Excluded intentionally:** Instagram, Twitter/X, TikTok, LinkedIn, YouTube — these return HTTP 200 for ALL usernames and render "not found" in JavaScript only, causing 100% false positives.
+
+---
+
+## 🛠️ Run from Source
+
+```bash
+pip install aiohttp phonenumbers dnspython python-whois rich
+python osint_tool.py
+```
+
+---
+
+## 📸 Modes
+
+```
+[1] 📧  Email OSINT
+[2] 📱  Phone OSINT
+[3] 🌍  IP OSINT
+[4] 🌐  Domain OSINT
+[5] 🔎  Username Check
+[6] 🚀  All-in-One (auto-detect + Email→Phone hunt)
+[7] 🚪  Exit
+```
+
+---
+
+## ⚡ Built With
+
+- `aiohttp` — async HTTP, concurrent requests
+- `phonenumbers` — Google's libphonenumber (carrier, geo, type)
+- `dnspython` — DNS resolution
+- `python-whois` — WHOIS lookups
+- `rich` — terminal UI
+
+**No API keys. No paid tiers. No bullshit.**
+
+---
+
+*Made with ❤️ by [Og-py3](https://github.com/og-py3)*
