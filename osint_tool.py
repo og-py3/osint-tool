@@ -72,66 +72,47 @@ VERSION = "[dim]v4.0 | Async Engine | Accurate Platform Detection | Smart Body V
 # Platforms that return 200 for any username (Instagram, Twitter, TikTok,
 # LinkedIn, etc.) are excluded — they produce false positives.
 
+# ── PLATFORM_CHECKS format: (name, url_template, not_found_body_patterns)
+# ONLY platforms where detection is verifiable and accurate:
+#   Tier 1 — JSON APIs: return real HTTP 404 when user missing (most accurate)
+#   Tier 2 — HTML pages: server returns real HTTP 404 when user missing
+#   Tier 3 — Body patterns: server returns 200 but body contains "not found" text
+# Platforms excluded: JS-rendered SPAs that return 200 for all URLs (false positives)
 PLATFORM_CHECKS = [
-    # ── Dev / Code (reliable 404 on miss) ─────────────────────────────────────
-    ("GitHub",       "https://github.com/{u}",                                       []),
-    ("GitLab",       "https://gitlab.com/{u}",                                       []),
-    ("Replit",       "https://replit.com/@{u}",                                      []),
-    ("CodePen",      "https://codepen.io/{u}",                                       []),
-    ("NPM",          "https://www.npmjs.com/~{u}",                                   []),
-    ("PyPI",         "https://pypi.org/user/{u}/",                                   []),
-    ("DockerHub",    "https://hub.docker.com/u/{u}",                                 []),
-    ("HuggingFace",  "https://huggingface.co/{u}",                                   []),
-    ("Kaggle",       "https://www.kaggle.com/{u}",                                   []),
-    ("Hashnode",     "https://hashnode.com/@{u}",                                    []),
-    ("Lobsters",     "https://lobste.rs/u/{u}",                                      []),
-    # ── Dev APIs (JSON, 404 on miss) ──────────────────────────────────────────
-    ("Dev.to",       "https://dev.to/api/users/by_username?url={u}",                 []),
-    ("Chess.com",    "https://api.chess.com/pub/player/{u}",                         []),
-    ("Lichess",      "https://lichess.org/api/user/{u}",                             []),
-    ("Mastodon",     "https://mastodon.social/api/v1/accounts/lookup?acct={u}",      []),
-    # ── Social / Community ─────────────────────────────────────────────────────
-    ("Reddit",       "https://www.reddit.com/user/{u}/about.json",                   []),
-    ("Keybase",      "https://keybase.io/{u}",                                       []),
-    ("About.me",     "https://about.me/{u}",                                         []),
-    ("Quora",        "https://www.quora.com/profile/{u}",                            []),
-    ("Medium",       "https://medium.com/@{u}",                                      ["pageerror", "page not found"]),
-    ("Linktree",     "https://linktr.ee/{u}",                                        ["sorry, this page isn't available", "this account doesn't exist", "404"]),
-    ("Substack",     "https://{u}.substack.com",                                     ["this publication doesn't exist", "start writing on substack"]),
-    ("Tumblr",       "https://{u}.tumblr.com",                                       ["there's nothing here.", "page not found"]),
-    # ── HackerNews: Firebase API returns literal "null" if user missing ────────
-    ("HackerNews",   "https://hacker-news.firebaseio.com/v0/user/{u}.json",          ["__hn_check__"]),
-    # ── Gaming ─────────────────────────────────────────────────────────────────
-    ("Steam",        "https://steamcommunity.com/id/{u}",                            ["the specified profile could not be found"]),
-    ("Minecraft",    "https://namemc.com/profile/{u}",                               []),
-    ("Roblox",       "https://www.roblox.com/user.aspx?username={u}",               ["page cannot be found", "page not found"]),
-    ("Fortnite",     "https://fortnitetracker.com/profile/all/{u}",                  ["we couldn't find this player", "player not found"]),
-    ("Duolingo",     "https://www.duolingo.com/profile/{u}",                         []),
-    ("Kick",         "https://kick.com/{u}",                                         []),
-    ("Chess.com Web","https://www.chess.com/member/{u}",                             []),
-    # ── Creative ───────────────────────────────────────────────────────────────
-    ("Dribbble",     "https://dribbble.com/{u}",                                     []),
-    ("Behance",      "https://www.behance.net/{u}",                                  []),
-    ("DeviantArt",   "https://www.deviantart.com/{u}",                               []),
-    ("VSCO",         "https://vsco.co/{u}/gallery",                                  []),
-    ("itch.io",      "https://{u}.itch.io",                                          []),
-    ("Bandcamp",     "https://{u}.bandcamp.com",                                     []),
-    ("Patreon",      "https://www.patreon.com/{u}",                                  []),
-    # ── Music / Video ──────────────────────────────────────────────────────────
-    ("SoundCloud",   "https://soundcloud.com/{u}",                                   []),
-    ("Vimeo",        "https://vimeo.com/{u}",                                        []),
-    ("Last.fm",      "https://www.last.fm/user/{u}",                                 []),
-    ("Mixcloud",     "https://www.mixcloud.com/{u}/",                                ["page not found", "no results found"]),
-    ("Flickr",       "https://www.flickr.com/people/{u}",                            []),
-    # ── Anime / Books / Writing ────────────────────────────────────────────────
-    ("MyAnimeList",  "https://myanimelist.net/profile/{u}",                          []),
-    ("AniList",      "https://anilist.co/user/{u}/",                                 []),
-    ("Letterboxd",   "https://letterboxd.com/{u}",                                   []),
-    ("AO3",          "https://archiveofourown.org/users/{u}",                        []),
-    ("Wattpad",      "https://www.wattpad.com/user/{u}",                             []),
-    # ── Other ──────────────────────────────────────────────────────────────────
-    ("Imgur",        "https://imgur.com/user/{u}",                                   []),
-    ("Gravatar",     "https://en.gravatar.com/{u}",                                  ["gravatar profile not found", "no profile found"]),
+    # ── Tier 1: JSON APIs — real 404 / special null response ──────────────────
+    # name uses special handler in check_one()
+    ("GitHub",          "https://api.github.com/users/{u}",                              []),
+    ("Reddit",          "https://www.reddit.com/user/{u}/about.json",                    []),
+    ("HackerNews",      "https://hacker-news.firebaseio.com/v0/user/{u}.json",           []),  # null body = not found
+    ("Chess.com",       "https://api.chess.com/pub/player/{u}",                          []),
+    ("Lichess",         "https://lichess.org/api/user/{u}",                              []),
+    ("Dev.to",          "https://dev.to/api/users/by_username?url={u}",                  []),
+    ("Mastodon",        "https://mastodon.social/api/v1/accounts/lookup?acct={u}",       []),  # 404/422 = not found
+    ("NPM",             "https://registry.npmjs.org/-/user/org.couchdb.user:{u}",        []),
+    ("Keybase",         "https://keybase.io/_/api/1.0/user/lookup.json?usernames={u}",   []),  # "them":[] = not found
+    # ── Tier 2: HTML pages — reliable HTTP 404 when user missing ──────────────
+    ("GitLab",          "https://gitlab.com/{u}",                                        []),
+    ("PyPI",            "https://pypi.org/user/{u}/",                                    []),
+    ("HuggingFace",     "https://huggingface.co/{u}",                                    []),
+    ("Lobsters",        "https://lobste.rs/u/{u}",                                       []),
+    ("CodePen",         "https://codepen.io/{u}",                                        []),
+    ("Letterboxd",      "https://letterboxd.com/{u}",                                    []),
+    ("MyAnimeList",     "https://myanimelist.net/profile/{u}",                           []),
+    ("AO3",             "https://archiveofourown.org/users/{u}",                         []),
+    ("Wattpad",         "https://www.wattpad.com/user/{u}",                              []),
+    ("Last.fm",         "https://www.last.fm/user/{u}",                                  []),
+    ("Vimeo",           "https://vimeo.com/{u}",                                         []),
+    ("Imgur",           "https://imgur.com/user/{u}",                                    []),
+    ("About.me",        "https://about.me/{u}",                                          []),
+    ("Medium",          "https://medium.com/@{u}",                                       []),
+    ("Flickr",          "https://www.flickr.com/people/{u}",                             []),
+    ("AniList",         "https://anilist.co/user/{u}/",                                  []),
+    ("Minecraft",       "https://namemc.com/profile/{u}",                                []),
+    # ── Tier 3: Body pattern detection ────────────────────────────────────────
+    ("Steam",           "https://steamcommunity.com/id/{u}",                             ["the specified profile could not be found"]),
+    ("Tumblr",          "https://{u}.tumblr.com",                                        ["there's nothing here.", "404 | not found"]),
+    ("Substack",        "https://{u}.substack.com",                                      ["this publication doesn't exist", "page not found"]),
+    ("Gravatar",        "https://en.gravatar.com/{u}",                                   ["gravatar profile not found", "no profile found"]),
 ]
 
 PHONE_CARRIERS = {
@@ -317,52 +298,74 @@ async def get_github_info(username: str, session: aiohttp.ClientSession) -> dict
 
 async def run_username_checks(username: str) -> list:
     """
-    Smart per-platform checker using PLATFORM_CHECKS.
-    Rules:
-      - HTTP 404           → NOT found (all platforms)
-      - HTTP 200, no patterns → FOUND
-      - HTTP 200, body contains any not_found_pattern → NOT found
-      - HackerNews: body.strip() == 'null' → NOT found
-    No API keys required.
+    Smart per-platform username checker — no API keys.
+
+    Detection rules (in priority order):
+      1. HTTP 404 / 410 / 422  → NOT found (hard server-side miss)
+      2. HackerNews            → body is literally 'null' → NOT found
+      3. Keybase API           → JSON contains '"them":[]' → NOT found
+      4. Mastodon API          → 404 or 422 → NOT found
+      5. Body patterns present → any pattern found in body → NOT found
+      6. HTTP 200 + no patterns → FOUND
+    Only PLATFORM_CHECKS entries with verified detection are included.
     """
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                      "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         "Accept-Language": "en-US,en;q=0.9",
         "Accept": "text/html,application/json,*/*;q=0.8",
     }
     connector = aiohttp.TCPConnector(limit=60, ssl=False, ttl_dns_cache=300)
     semaphore = asyncio.Semaphore(40)
 
-    async def check_one(name, url_tpl, not_found_patterns):
+    async def check_one(name: str, url_tpl: str, not_found_patterns: list):
         async with semaphore:
             url = url_tpl.format(u=username)
             try:
                 async with session.get(
                     url,
-                    timeout=aiohttp.ClientTimeout(total=10, connect=4),
-                    allow_redirects=True
+                    timeout=aiohttp.ClientTimeout(total=12, connect=5),
+                    allow_redirects=True,
                 ) as resp:
-                    # Hard 404 = definitely gone
-                    if resp.status == 404:
-                        return {"service": name, "url": url, "found": False, "status": 404}
-                    # Non-200 range we don't trust as "found"
-                    if resp.status not in (200, 301, 302):
-                        return {"service": name, "url": url, "found": None, "status": resp.status}
+                    status = resp.status
 
-                    # Read body only when we need pattern matching
-                    found = True
+                    # ── Hard misses (server confirms absence) ────────────────
+                    if status in (404, 410):
+                        return {"service": name, "url": url, "found": False, "status": status}
+
+                    # Mastodon returns 422 for invalid/missing usernames
+                    if name == "Mastodon" and status == 422:
+                        return {"service": name, "url": url, "found": False, "status": status}
+
+                    # Any other non-success, non-redirect → inconclusive
+                    if status not in (200, 301, 302, 206):
+                        return {"service": name, "url": url, "found": None, "status": status}
+
+                    # ── Platform-specific body checks ────────────────────────
+                    # HackerNews Firebase: body is literal JSON value "null" when missing
+                    if name == "HackerNews":
+                        body = (await resp.text(errors="ignore")).strip()
+                        return {"service": name, "url": url,
+                                "found": body != "null", "status": status}
+
+                    # Keybase public API: {"them":[]} when user doesn't exist
+                    if name == "Keybase":
+                        raw = (await resp.text(errors="ignore"))
+                        compact = raw.replace(" ", "").replace("\n", "")
+                        return {"service": name, "url": url,
+                                "found": '"them":[]' not in compact, "status": status}
+
+                    # ── General body-pattern matching ────────────────────────
                     if not_found_patterns:
-                        body = (await resp.text(errors="ignore"))[:5000].lower()
-                        # HackerNews Firebase: entire body is the JSON value "null"
-                        if name == "HackerNews" and body.strip() == "null":
-                            found = False
-                        else:
-                            for pat in not_found_patterns:
-                                if pat in body:
-                                    found = False
-                                    break
+                        body = (await resp.text(errors="ignore"))[:8000].lower()
+                        for pat in not_found_patterns:
+                            if pat in body:
+                                return {"service": name, "url": url,
+                                        "found": False, "status": status}
 
-                    return {"service": name, "url": url, "found": found, "status": resp.status}
+                    # ── 200 + no disqualifying pattern → FOUND ───────────────
+                    return {"service": name, "url": url, "found": True, "status": status}
+
             except asyncio.TimeoutError:
                 return {"service": name, "url": url, "found": None, "status": "timeout"}
             except Exception:
@@ -370,7 +373,7 @@ async def run_username_checks(username: str) -> list:
 
     async with aiohttp.ClientSession(headers=headers, connector=connector) as session:
         coros = [check_one(n, u, p) for n, u, p in PLATFORM_CHECKS]
-        return await asyncio.gather(*coros)
+        return list(await asyncio.gather(*coros))
 
 # ────────────────── PHONE OSINT ──────────────────────────────
 
