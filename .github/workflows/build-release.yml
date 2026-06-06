@@ -1,0 +1,88 @@
+name: Build EXE & Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    name: Build Windows EXE
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install aiohttp phonenumbers rich dnspython python-whois pyinstaller
+
+      - name: Build EXE with PyInstaller
+        run: |
+          pyinstaller `
+            --onefile `
+            --console `
+            --name osint-tool `
+            --hidden-import aiohttp `
+            --hidden-import phonenumbers `
+            --hidden-import phonenumbers.geodata `
+            --hidden-import phonenumbers.data `
+            --hidden-import dns `
+            --hidden-import dns.resolver `
+            --hidden-import whois `
+            --hidden-import rich `
+            --hidden-import rich.console `
+            --hidden-import rich.panel `
+            --hidden-import rich.table `
+            --hidden-import rich.progress `
+            --hidden-import rich.rule `
+            --hidden-import rich.box `
+            --hidden-import rich.live `
+            --hidden-import rich.layout `
+            --hidden-import zoneinfo `
+            --collect-all phonenumbers `
+            --collect-all dns `
+            osint_tool.py
+
+      - name: Get version tag
+        id: tag
+        shell: bash
+        run: echo "tag=v$(date +%Y.%m.%d)-$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: "OSINT Tool ${{ steps.tag.outputs.tag }}"
+          body: |
+            ## Ultimate OSINT Tool — Made by Og-py3
+
+            ### Download
+            👇 **`osint-tool.exe`** — standalone Windows executable, no Python required.
+            Just download and run. No install. No dependencies.
+
+            ### Features
+            - 📧 Email OSINT — breaches, Gravatar, GitHub, WHOIS, DNS, IP geo, 100+ platform scan
+            - 📱 Phone OSINT — carrier, location, latency test, timezone, line type
+            - 🌍 IP OSINT — geolocation, ASN, ISP, proxy/VPN detection
+            - 🌐 Domain OSINT — WHOIS, DNS records, IP resolution
+            - 🔎 Username scan — 100+ platforms concurrently
+            - 🚀 ALL-IN-ONE — auto-detect input type + Email→Phone extraction
+
+            ---
+            Built with PyInstaller on Windows · **Made by Og-py3**
+          files: dist/osint-tool.exe
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
